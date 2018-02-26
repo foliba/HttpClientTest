@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -11,7 +13,7 @@ namespace HTTPClientTest
     {
         private const string url = "http://google.com/unknown";
 
-		static void Main(string[] args)
+        static void Main(string[] args)
         {
             MainAsync(args).Wait();
 
@@ -24,6 +26,8 @@ namespace HTTPClientTest
         static async Task MainAsync(string[] args)
         {
             Console.WriteLine(url);
+
+            await MakeHttpCall_WebRequest_Unsafe();
 
             await MakeHttpCallAsync_Safe();
             await MakeHttpCallAsync_Unsafe();
@@ -61,12 +65,14 @@ namespace HTTPClientTest
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
 
-                try {
+                try
+                {
                     var responseHtml = await client.GetStringAsync(url);
 
                     ret = responseHtml;
                 }
-                catch (HttpRequestException ex) {
+                catch (HttpRequestException ex)
+                {
                     Console.WriteLine(ex);
                 }
             }
@@ -78,6 +84,7 @@ namespace HTTPClientTest
 
 
         #region using HttpResponseMessage.Content.ReadAsString
+        //  should cause an exception
         private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Unsafe()
         {
             Console.WriteLine("making HttpResponseMessage.Content.ReadAsString unsafe call");
@@ -107,7 +114,7 @@ namespace HTTPClientTest
 
             using (var client = new HttpClient())
             {
-				var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
 
                 try
                 {
@@ -126,5 +133,28 @@ namespace HTTPClientTest
             return ret;
         }
         #endregion //   using HttpResponseMessage.Content.ReadAsString
+        private static async Task<string> MakeHttpCall_WebRequest_Unsafe()
+        {
+            var ret = string.Empty;
+
+            Console.WriteLine("making WebRequest unsafe call");
+
+            var request = WebRequest.CreateHttp(url);
+            var response = (HttpWebResponse)await request.GetResponseAsync();
+            var dataStream = response.GetResponseStream();
+            var reader = new StreamReader(dataStream);
+            string responseFromServer = reader.ReadToEnd();
+
+            ret = responseFromServer;
+
+            reader.Close();
+            dataStream.Close();
+            response.Close();
+
+            return ret;
+        }
+
+        #region WebRequest
+        #endregion //   WebRequest
     }
 }
