@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace HTTPClientTest
 {
     /// <summary>
-    /// This tiny test should showcase the need of try/catch around HttpClient.SendAsync and HttpResponseMessage.Content.Read
+    /// This tiny test should showcase the need of try/catch around HttpClient.GetStringAsync
     /// </summary>
     class Program
     {
@@ -37,11 +37,9 @@ namespace HTTPClientTest
 
             using (var client = new HttpClient())
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                var response = await client.SendAsync(request);
-                var json = await response.Content.ReadAsStringAsync();
+                var responseHtml = await client.GetStringAsync(url);
 
-				ret = json;
+                ret = responseHtml;
 
             }
 
@@ -61,8 +59,8 @@ namespace HTTPClientTest
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
 
                 try {
-					var response = await client.SendAsync(request);
-                    var responseHtml = await response.Content.ReadAsStringAsync();
+                    var responseHtml = await client.GetStringAsync(url);
+
                     ret = responseHtml;
                 }
                 catch (HttpRequestException ex) {
