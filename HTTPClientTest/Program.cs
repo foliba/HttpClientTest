@@ -4,18 +4,21 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 PrintResponse(await MakeHttpCallAsync_Safe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }            Console.WriteLine("###################################################\n\n\n");            try
             {
                 PrintResponse( await MakeHttpCallAsync_Unsafe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }            Console.WriteLine("###################################################\n\n\n");            try
             {
                 PrintResponse(await MakeHttpCallAsync_HttpRequestMessage_Safe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }
             Console.WriteLine("###################################################\n\n\n");
@@ -26,6 +29,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 PrintResponse(await MakeHttpCallAsync_HttpRequestMessage_Unsafe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }
             Console.WriteLine("###################################################\n\n\n");
@@ -36,6 +40,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 PrintResponse(await MakeHttpCall_WebRequest_Safe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }
             Console.WriteLine("###################################################\n\n\n");
@@ -46,6 +51,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 PrintResponse(await MakeHttpCall_WebRequest_Unsafe());
             }            catch (Exception ex)
             {
+                PrintMisingStatusCodeMsg();
                 PrintEx(ex);
             }
         }
@@ -53,13 +59,18 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
 
         #region using HttpClient.GetStringAsync        private static async Task<string> MakeHttpCallAsync_Unsafe()        {            Console.WriteLine("Making HttpClient.GetStringAsync unsafe call");            var ret = string.Empty;            using (var client = new HttpClient())            {
                 //  exception should be thrown here
-                var responseHtml = await client.GetStringAsync(url);                ret = responseHtml;            }            Console.WriteLine(ret);            return ret;        }        private static async Task<string> MakeHttpCallAsync_Safe()        {            Console.WriteLine("Making HttpClient.GetStringAsync safe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                var request = new HttpRequestMessage(HttpMethod.Get, url);                try                {
+                var responseHtml = await client.GetStringAsync(url);                PrintMisingStatusCodeMsg();                ret = responseHtml;            }            return ret;        }        private static async Task<string> MakeHttpCallAsync_Safe()        {            Console.WriteLine("Making HttpClient.GetStringAsync safe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                var request = new HttpRequestMessage(HttpMethod.Get, url);                try                {
                     //  exception should be thrown here
-                    var responseHtml = await client.GetStringAsync(url);                    ret = responseHtml;                }                catch (HttpRequestException ex)                {                    PrintEx(ex, true);                }            }            return ret;        }        #endregion //   using HttpClient.GetStringAsync        #region using HttpResponseMessage.Content.ReadAsString        //  should cause an exception        private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Unsafe()        {            Console.WriteLine("making HttpResponseMessage.Content.ReadAsString unsafe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                    var responseHtml = await client.GetStringAsync(url);                    PrintMisingStatusCodeMsg();                    ret = responseHtml;                }                catch (HttpRequestException ex)                {                    PrintMisingStatusCodeMsg();                    PrintEx(ex, true);                }            }            return ret;        }
+        #endregion //   using HttpClient.GetStringAsync
+
+        #region using HttpResponseMessage.Content.ReadAsString        //  should cause an exception
+        private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Unsafe()        {            Console.WriteLine("making HttpResponseMessage.Content.ReadAsString unsafe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
                     //  exception should be thrown here --> but isn't
                     //  so we don't need a try/catch block here
-                    var response = await client.SendAsync(request);                    var responseHtml = await response.Content.ReadAsStringAsync();                    ret = responseHtml;
+                    var response = await client.SendAsync(request);                    var responseHtml = await response.Content.ReadAsStringAsync();
+                    PrintStatusCode(response.StatusCode, response.IsSuccessStatusCode);                    ret = responseHtml;
                 }            }            return ret;        }        private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Safe()        {            Console.WriteLine("making HttpResponseMessage.Content.ReadAsString safe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
                     try
@@ -68,6 +79,8 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                         //  so we can safely leave remove this try/catch block
                         var response = await client.SendAsync(request);
                         var responseHtml = await response.Content.ReadAsStringAsync();
+
+                        PrintStatusCode(response.StatusCode, response.IsSuccessStatusCode);
 
                         ret = responseHtml;
                     }
@@ -79,6 +92,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             //  exception should be thrown here
             using (var response = (HttpWebResponse)await request.GetResponseAsync())
             {
+                PrintStatusCode(response.StatusCode, response.StatusCode >= HttpStatusCode.OK && response.StatusCode < HttpStatusCode.Ambiguous);
                 using (var dataStream = response.GetResponseStream())
                 {
                     using (var reader = new StreamReader(dataStream))
@@ -96,6 +110,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 //  exception should be thrown here
                 using (var response = (HttpWebResponse)await request.GetResponseAsync())
                 {
+                    PrintStatusCode(response.StatusCode, response.StatusCode >= HttpStatusCode.OK && response.StatusCode < HttpStatusCode.Ambiguous);
                     using (var dataStream = response.GetResponseStream())
                     {
                         using (var reader = new StreamReader(dataStream))
@@ -109,6 +124,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             }
             catch (WebException ex)
             {
+                PrintStatusCode(ex.Status);
                 PrintEx(ex, true);
             }            return ret;        }        #endregion //   WebRequest
         #region helper        private static void PrintWeDied()
@@ -119,11 +135,15 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             Console.ForegroundColor = color;
         }        private static void PrintEx(Exception ex, bool cought = false)
         {
+            var newColor = ConsoleColor.Yellow;
             if (!cought)
+            {
                 PrintWeDied();
+                newColor = ConsoleColor.DarkRed;
+            }
 
             var color = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = newColor;
             Console.WriteLine(ex);
             Console.ForegroundColor = color;
         }        private static void PrintResponse(string response)
@@ -133,4 +153,38 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             Console.WriteLine(response);
             Console.ForegroundColor = color;
         }
+
+        private static void PrintStatusCode(HttpStatusCode statusCode, bool success)
+        {
+            var color = Console.ForegroundColor;
+            if (success)
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+            else
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(String.Format("Status code was: {0}", statusCode));
+            Console.ForegroundColor = color;
+        }
+
+        private static void PrintStatusCode(WebExceptionStatus statusCode)
+        {
+            var color = Console.ForegroundColor;
+            if (statusCode == WebExceptionStatus.Success)
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+            else
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(String.Format("Status code was: {0}", statusCode));
+            Console.ForegroundColor = color;
+        }
+
+
+
+        private static void PrintMisingStatusCodeMsg()
+        {
+            var color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine("No way to get the status code.");
+            Console.ForegroundColor = color;
+        }
+
+
         #endregion //   helper    }}
