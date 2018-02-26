@@ -133,6 +133,9 @@ namespace HTTPClientTest
             return ret;
         }
         #endregion //   using HttpResponseMessage.Content.ReadAsString
+		
+
+        #region WebRequest
         private static async Task<string> MakeHttpCall_WebRequest_Unsafe()
         {
             var ret = string.Empty;
@@ -153,8 +156,6 @@ namespace HTTPClientTest
 
             return ret;
         }
-
-        #region WebRequest
         #endregion //   WebRequest
     }
 }
