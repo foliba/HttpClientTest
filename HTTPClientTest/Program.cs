@@ -20,13 +20,16 @@ namespace HTTPClientTest
         }
 
 
+        #region using HttpClient.GetStringAsync
         static async Task MainAsync(string[] args)
         {
             Console.WriteLine(url);
 
             await MakeHttpCallAsync_Safe();
-
             await MakeHttpCallAsync_Unsafe();
+
+            await MakeHttpCallAsync_HttpRequestMessage_Safe();
+            await MakeHttpCallAsync_HttpRequestMessage_Unsafe();
         }
 
         private static async Task<string> MakeHttpCallAsync_Unsafe()
@@ -71,5 +74,57 @@ namespace HTTPClientTest
             Console.WriteLine(ret);
             return ret;
         }
+        #endregion //   using HttpClient.GetStringAsync
+
+
+        #region using HttpResponseMessage.Content.ReadAsString
+        private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Unsafe()
+        {
+            Console.WriteLine("making HttpResponseMessage.Content.ReadAsString unsafe call");
+
+            var ret = string.Empty;
+
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var response = await client.SendAsync(request);
+                var responseHtml = await response.Content.ReadAsStringAsync();
+
+                ret = responseHtml;
+
+            }
+
+            Console.WriteLine(ret);
+            return ret;
+        }
+
+
+        private static async Task<string> MakeHttpCallAsync_HttpRequestMessage_Safe()
+        {
+            Console.WriteLine("making HttpResponseMessage.Content.ReadAsString unsafe call");
+
+            var ret = string.Empty;
+
+            using (var client = new HttpClient())
+            {
+				var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                try
+                {
+                    var response = await client.SendAsync(request);
+                    var responseHtml = await response.Content.ReadAsStringAsync();
+
+                    ret = responseHtml;
+                }
+                catch (HttpRequestException ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }
+
+            Console.WriteLine(ret);
+            return ret;
+        }
+        #endregion //   using HttpResponseMessage.Content.ReadAsString
     }
 }
