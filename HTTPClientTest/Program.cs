@@ -86,12 +86,8 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                         string responseFromServer = reader.ReadToEnd();
 
                         ret = responseFromServer;
-
-                        reader.Close();
                     }
-                    dataStream.Close();
                 }
-                response.Close();
             }
             return ret;        }        private static async Task<string> MakeHttpCall_WebRequest_Safe()        {            Console.WriteLine("making WebRequest safe call");            var ret = string.Empty;
 
@@ -107,12 +103,8 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                             string responseFromServer = reader.ReadToEnd();
 
                             ret = responseFromServer;
-
-                            reader.Close();
                         }
-                        dataStream.Close();
                     }
-                    response.Close();
                 }
             }
             catch (WebException ex)
