@@ -1,5 +1,15 @@
 ﻿using System;using System.Collections.Generic;
-using System.IO;using System.Net;using System.Net.Http;using System.Threading.Tasks;namespace HTTPClientTest{    /// <summary>    /// This tiny test should showcase the need of try/catch around HttpClient.GetStringAsync    /// </summary>    class Program    {        private const string url = "http://google.com/unknown";        static void Main(string[] args)        {            MainAsync(args).Wait();            Console.WriteLine("\n\n\n=====> end");            Console.ReadKey();        }        static async Task MainAsync(string[] args)        {            Console.WriteLine(url);                        try
+using System.IO;using System.Net;using System.Net.Http;using System.Threading.Tasks;namespace HTTPClientTest{
+
+
+
+
+
+
+    /// <summary>    /// This tiny test should showcase the need of try/catch around HttpClient.GetStringAsync    /// </summary>    class Program    {        private const string url = "http://google.com/unknown";        static void Main(string[] args)        {            MainAsync(args).Wait();            Console.WriteLine("\n\n\n=====> end");            Console.ReadKey();        }        static async Task MainAsync(string[] args)        {            Console.WriteLine(url);
+
+
+            try
             {
                 PrintResponse(await MakeHttpCallAsync_Safe());
             }            catch (Exception ex)
@@ -8,7 +18,7 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                 PrintEx(ex);
             }            Console.WriteLine("###################################################\n\n\n");            try
             {
-                PrintResponse( await MakeHttpCallAsync_Unsafe());
+                PrintResponse(await MakeHttpCallAsync_Unsafe());
             }            catch (Exception ex)
             {
                 PrintMisingStatusCodeMsg();
@@ -53,8 +63,10 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             {
                 PrintMisingStatusCodeMsg();
                 PrintEx(ex);
-            }
+            }            Console.WriteLine("###################################################\n\n\n");            try            {                PrintResponse(await MakeHttpCall_ClientGetAsync_Safe());            }            catch (Exception ex)            {                PrintMisingStatusCodeMsg();                PrintEx(ex);            }            Console.WriteLine("###################################################\n\n\n");            try            {                PrintResponse(await MakeHttpCall_ClientGetAsync_Unsafe());            }            catch (Exception ex)            {                PrintMisingStatusCodeMsg();                PrintEx(ex);            }
         }
+
+
 
 
         #region using HttpClient.GetStringAsync        private static async Task<string> MakeHttpCallAsync_Unsafe()        {            Console.WriteLine("Making HttpClient.GetStringAsync unsafe call");            var ret = string.Empty;            using (var client = new HttpClient())            {
@@ -88,7 +100,14 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
                     {
                         PrintEx(ex, true);
                     }
-                }                }            return ret;        }        #endregion //   using HttpResponseMessage.Content.ReadAsString		        #region WebRequest        private static async Task<string> MakeHttpCall_WebRequest_Unsafe()        {            Console.WriteLine("making WebRequest unsafe call");            var ret = string.Empty;                        var request = WebRequest.CreateHttp(url);
+                }
+            }            return ret;        }
+        #endregion //   using HttpResponseMessage.Content.ReadAsString
+
+
+        #region using HttpClient.GetAsync()        private static async Task<string> MakeHttpCall_ClientGetAsync_Unsafe()        {            Console.WriteLine("making HttpClient.GetAsync unsafe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                using (var response = await client.GetAsync(url))                {                    PrintStatusCode(response.StatusCode, response.IsSuccessStatusCode);                    //  exception might be thrown --> nopes... all good here                    var responseString = await response.Content.ReadAsStringAsync();                    ret = responseString;                }            }            return ret;        }        private static async Task<string> MakeHttpCall_ClientGetAsync_Safe()        {            Console.WriteLine("making HttpClient.GetAsync safe call");            var ret = string.Empty;            using (var client = new HttpClient())            {                using (var response = await client.GetAsync(url))                {                    PrintStatusCode(response.StatusCode, response.IsSuccessStatusCode);                    //  exit in case of not success                    if (!response.IsSuccessStatusCode)                    {                        return ret;                    }                    var responseString = await response.Content.ReadAsStringAsync();                    ret = responseString;                }            }            return ret;        }
+        #endregion  //  using HttpClient.GetAsync()
+        #region WebRequest        private static async Task<string> MakeHttpCall_WebRequest_Unsafe()        {            Console.WriteLine("making WebRequest unsafe call");            var ret = string.Empty;                        var request = WebRequest.CreateHttp(url);
             //  exception should be thrown here
             using (var response = (HttpWebResponse)await request.GetResponseAsync())
             {
@@ -185,6 +204,4 @@ using System.IO;using System.Net;using System.Net.Http;using System.Threading
             Console.WriteLine("No way to get the status code.");
             Console.ForegroundColor = color;
         }
-
-
         #endregion //   helper    }}
