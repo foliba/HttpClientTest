@@ -18,3 +18,7 @@ Which is called by:
 
 Which is called by:
 --> public Task<string> GetStringAsync(string requestUri)
+
+
+#######
+Turns out the best way to make HTTP calls is using the HttpClient.GetAsync() (PutAsync, PostAsync, DeleteAsync). No exceptions thrown in case of no 200 responses. Direct, easy and proper IsSuccess check, Access to the correct http status code in all cases.
